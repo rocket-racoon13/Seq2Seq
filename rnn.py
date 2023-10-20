@@ -3,8 +3,8 @@ from model_utils import *
 
 
 class RNN:
-    def __init__(self, tokenizer, hidden_size=100, lr=1e-3):
-        self.vocab_size = len(tokenizer["token_to_idx"])
+    def __init__(self, vocab_size, hidden_size=100, lr=1e-3):
+        self.vocab_size = vocab_size
         self.hidden_size = hidden_size
         self.learning_rate = lr
         

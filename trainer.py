@@ -11,13 +11,13 @@ class Trainer:
         self,
         args,
         train_ds,
-        eval_ds,
+        valid_ds,
         model
     ):
         self.batch_size = args.batch_size
         self.num_epochs = args.num_epochs
         self.train_ds = train_ds
-        self.eval_ds = eval_ds
+        self.valid_ds = valid_ds
         self.model = model
         self.training_loss = []
         self.validation_loss = []
