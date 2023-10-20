@@ -30,6 +30,19 @@ def sequences_to_dicts(sequences):
     return token_to_idx, idx_to_token, num_sentences, vocab_size
 
 
+def one_hot_encode(idx, vocab_size):
+    one_hot_vector = np.zeros(vocab_size)
+    one_hot_vector[idx] = 1
+    return one_hot_vector
+
+
+def one_hot_encode_sequence(sequence, token_to_idx, vocab_size):
+    encoding = np.array([one_hot_encode(token_to_idx[token], vocab_size) for token in sequence])
+    encoding = encoding.reshape(encoding.shape[0], encoding.shape[1], 1)
+    return encoding
+
+
 sequences = generate_dataset()
-print(sequences[0])
-sequences_to_dicts(sequences)
+token_to_idx, idx_to_token, num_sentences, vocab_size = sequences_to_dicts(sequences)
+encoding = one_hot_encode_sequence(sequences[0], token_to_idx, vocab_size)
+print(encoding.shape) # (15, 4, 1)
