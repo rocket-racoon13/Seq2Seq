@@ -21,13 +21,13 @@ class RNN:
         outputs, hidden_states = {}, {}
         hidden_states[-1] = hidden_state
         for t in range(len(inputs)):
-            hidden_state = tanh(np.dot(self.U, inputs[t]) + np.dot(self.V, hidden_state[t-1]) + self.b_hidden)
+            hidden_state = tanh(np.dot(self.U, inputs[t]) + np.dot(self.V, hidden_states[t-1]) + self.b_hidden)
             out = softmax(np.dot(self.W, hidden_state) + self.b_out)
             hidden_states[t] = hidden_state
             outputs[t] = out
         return outputs, hidden_states
     
-    def clip_gradient_norm(grads, max_norm=0.25):
+    def clip_gradient_norm(self, grads, max_norm=0.25):
         """
         Clips gradients to have a maximum norm of `max_norm`.
         This is to prevent the exploding gradients problem.
@@ -99,14 +99,10 @@ class RNN:
         return loss, gradients
             
     def optimize(self, gradients):
-        params = [
-            self.U,
-            self.V,
-            self.W,
-            self.b_hidden,
-            self.b_out
-        ]
-        for param, grad in zip(params, gradients):
-            param -= self.learning_rate * grad
-            
-        return params
+        d_U, d_V, d_W, d_b_hidden, d_b_out = gradients
+        
+        self.U -= self.learning_rate * d_U
+        self.V -= self.learning_rate * d_V
+        self.W -= self.learning_rate * d_W
+        self.b_hidden -= self.learning_rate * d_b_hidden
+        self.b_out -= self.learning_rate * d_b_out

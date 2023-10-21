@@ -9,19 +9,22 @@ from data_utils import generate_dataset, create_token_dictionary
 from rnn import RNN
 from tokenizer import Tokenizer
 from trainer import Trainer
-from tester import Tester
+# from tester import Tester
 
 
 def config():
-    args = argparse.ArgumentParser()
-    args.add_argument("--seed", type=int, default=777)
-    args.add_argument("--data_dir", type=str, default="data/simple.txt")
-    args.add_argument("--num_epochs", type=int, default=100)
-    args.add_argument("--batch_size", type=int, default=10)
-    args.add_argument("--hidden_size", type=int, default=128)
-    args.add_argument("--learning_rate", type=float, default=1e-3)
-    args.add_argument("--train", action="store_true")
-    args.add_argument("--test", action="store_true")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--seed", type=int, default=777)
+    parser.add_argument("--data_dir", type=str, default="data/simple.txt")
+    parser.add_argument("--num_epochs", type=int, default=100)
+    parser.add_argument("--batch_size", type=int, default=10)
+    parser.add_argument("--hidden_size", type=int, default=128)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
+    parser.add_argument("--logging_steps", type=int, default=40)
+    parser.add_argument("--saving_steps", type=int, default=80)
+    parser.add_argument("--train", action="store_true")
+    parser.add_argument("--test", action="store_true")
+    args = parser.parse_args()
     return args
 
 
@@ -31,14 +34,16 @@ if __name__ == "__main__":
     
     # Create random dataset
     if not os.path.exists(args.data_dir):
+        print(f"Generating random dataset...")
         generate_dataset()
     
+    # Load dataset
     with open(args.data_dir, encoding="utf-8-sig") as f_in:
         data = f_in.read().splitlines()
     
     # Create tokenizer
     tokenizer = Tokenizer(
-        corpus_file_path="data/simple.txt",
+        corpus_file_path=args.data_dir,
         top_k=1000,
         mode="character"
     )
@@ -46,14 +51,11 @@ if __name__ == "__main__":
     # Divide data into (character-level) inputs and targets
     inputs, targets = [], []
     inputs = [list(sequence) for sequence in data]
-    targets = [list(sequence) + ["EOS"] for sequence in data]
+    targets = [list(sequence)[1:] + ["EOS"] for sequence in data]
     
     # One-hot encode inputs and targets
-    inputs = [tokenizer.one_hot_encode_sequence(seq) for seq in input]
+    inputs = [tokenizer.one_hot_encode_sequence(seq) for seq in inputs]
     targets = [tokenizer.one_hot_encode_sequence(seq) for seq in targets]
-    for data in [inputs, targets]:
-        data = np.array(data)
-        data = data.reshape(data.shape[0], data.shape[1], 1)
     
     # Load and split dataset
     X_train, X_test, y_train, y_test = train_test_split(
@@ -82,6 +84,7 @@ if __name__ == "__main__":
             valid_ds=valid_ds,
             model=model
         )
+        trainer.train()
     
     if args.test:
         pass

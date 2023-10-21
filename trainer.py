@@ -14,6 +14,8 @@ class Trainer:
         valid_ds,
         model
     ):
+        self.args = args
+        self.hidden_size = args.hidden_size
         self.batch_size = args.batch_size
         self.num_epochs = args.num_epochs
         self.train_ds = train_ds
@@ -21,38 +23,47 @@ class Trainer:
         self.model = model
         self.training_loss = []
         self.validation_loss = []
+        self.steps = 0
         
     def train(self):
-        for i in tqdm(range(self.num_epochs)):
-            train_loader = DataLoader(self.train_ds, self.batch_size, shuffle=True)
+        for epoch_i in tqdm(range(self.num_epochs)):
+            # train_loader = DataLoader(self.train_ds, self.batch_size, shuffle=True)
             epoch_training_loss = 0
-            epoch_validation_loss = 0
             
-            for step, batch in enumerate(train_loader):
-                input, target = batch
-                
-            
-            
-            for inputs, targets in training_set:
-                
-                inputs_one_hot = one_hot_encode_sequence(inputs, vocab_size)
-                targets_one_hot = one_hot_encode_sequence(targets, vocab_size)
-                
-                hidden_state = np.zeros_like(hidden_state)
-                
+            for step, (inputs, targets) in enumerate(self.train_ds, 1):
+                # initialize hidden_state[t-1]
+                hidden_state = np.zeros((self.hidden_size, 1))
                 outputs, hidden_states = self.model.forward(
-                    inputs_one_hot, hidden_state
+                    inputs, hidden_state
                 )
                 loss, gradients = self.model.backward(
-                    inputs_one_hot, outputs, hidden_states, targets_one_hot
+                    inputs, outputs, hidden_states, targets
                 )
-                
-                if np.isnan(loss):
-                    raise ValueError('Gradients have vanished!')
-                
-                params = self.model.optimize(gradients)
-                
                 epoch_training_loss += loss
+                self.model.optimize(gradients)
+                self.steps += 1
                 
-    def valid(self):
-        pass
+                if step % self.args.logging_steps == 0:
+                    avg_loss = epoch_training_loss / step
+                    print(f"Epoch: {epoch_i:3d} Batch: {step:2d} Loss: {avg_loss:4.4f}")
+                    
+                if self.steps % self.args.saving_steps == 0:
+                    pass
+            
+            self.training_loss.append(epoch_training_loss / len(self.train_ds))
+            self.eval()
+            
+    def eval(self):
+        # valid_loader = DataLoader(self.valid_ds, self.batch_size, shuffle=False)
+        validation_loss = 0
+        for (inputs, targets) in self.valid_ds:
+            hidden_state = np.zeros((self.hidden_size, 1))
+            outputs, hidden_states = self.model.forward(
+                inputs, hidden_state
+            )
+            loss, _ = self.model.backward(
+                inputs, outputs, hidden_states, targets
+            )
+            validation_loss += loss
+            
+        print(f"Validation Loss: {validation_loss/len(self.valid_ds):4.4f}")

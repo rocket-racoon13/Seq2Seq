@@ -58,7 +58,7 @@ class Tokenizer:
         return [self.decode(idx) for idx in sequence]
 
     def one_hot_encode(self, idx):
-        one_hot_vector = np.zeros(self.vocab_size)
+        one_hot_vector = [0] * self.vocab_size
         one_hot_vector[idx] = 1
         return one_hot_vector
     
@@ -66,6 +66,7 @@ class Tokenizer:
         encoding = [self.encode(token) for token in sequence]
         encoding = [self.one_hot_encode(idx) for idx in encoding]
         return encoding
+
 
 if __name__ == "__main__":
     tokenizer = Tokenizer()
