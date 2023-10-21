@@ -5,7 +5,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from dataset import CustomDataset
-from data_utils import generate_dataset, create_token_dictionary
+from data_utils import generate_dataset
+from model_utils import load_model_ckpt
 from rnn import RNN
 from tokenizer import Tokenizer
 from trainer import Trainer
@@ -16,6 +17,7 @@ def config():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=777)
     parser.add_argument("--data_dir", type=str, default="data/simple.txt")
+    parser.add_argument("--ckpt_dir", type=str)
     parser.add_argument("--num_epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=10)
     parser.add_argument("--hidden_size", type=int, default=128)
@@ -70,12 +72,20 @@ if __name__ == "__main__":
     valid_ds = CustomDataset(X_valid, y_valid)
     test_ds = CustomDataset(X_test, y_test)
     
-    # Model
+    # Initialize model
     model = RNN(
         vocab_size=tokenizer.vocab_size,
         hidden_size=args.hidden_size,
         lr=args.learning_rate
     )
+    
+    # Load trained model
+    if args.ckpt_dir and args.model_name:
+        model, model_ckpt = load_model_ckpt(
+            model=model,
+            ckpt_dir=args.ckpt_dir,
+            model_name=args.model_name
+        )
     
     if args.train:
         trainer = Trainer(
@@ -87,4 +97,8 @@ if __name__ == "__main__":
         trainer.train()
     
     if args.test:
-        pass
+        tester = Tester(
+            args=args,
+            test_ds=test_ds,
+            model=model
+        )

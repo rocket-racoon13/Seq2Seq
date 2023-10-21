@@ -1,4 +1,38 @@
 import numpy as np
+import os
+import pickle
+
+
+def save_model_ckpt(model, ckpt_dir, model_name) -> None:
+    model_ckpt = {
+        "params": {},
+        "num_epochs": 0,
+        "loss": 0
+    }
+    model_ckpt["params"]["U"] = model.U
+    model_ckpt["params"]["V"] = model.V
+    model_ckpt["params"]["W"] = model.W
+    model_ckpt["params"]["b_hidden"] = model.b_hidden
+    model_ckpt["params"]["b_out"] = model.b_out
+    
+    with open(f"{os.path.join(ckpt_dir, model_name)}", "wb") as f_out:
+        pickle.dump(model_ckpt, f_out)
+
+
+def load_model_ckpt(model, ckpt_dir, model_name):
+    if not os.path.exists(ckpt_dir):
+        raise IOError("Model checkpoint not found.")
+    else:
+        with open(f"{os.path.join(ckpt_dir, model_name)}", "rb") as f_in:
+            model_ckpt = pickle.load(f_in)
+        
+        model.U = model_ckpt["params"]["U"]
+        model.V = model_ckpt["params"]["V"]
+        model.W = model_ckpt["params"]["W"]
+        model.b_hidden = model_ckpt["params"]["b_hidden"]
+        model.b_out = model_ckpt["params"]["b_out"]
+        
+        return model, model_ckpt
 
 
 def init_orthogonal(param):
@@ -12,9 +46,7 @@ def init_orthogonal(param):
         raise ValueError("Only parameters with 2 or more dimensions are supported.")
 
     rows, cols = param.shape
-    
     new_param = np.random.randn(rows, cols)
-    
     if rows < cols:
         new_param = new_param.T
     
