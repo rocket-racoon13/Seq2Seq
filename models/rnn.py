@@ -14,8 +14,9 @@ class RNN:
         self.b_hidden = np.zeros((self.hidden_size, 1))
         self.b_out = np.zeros((self.vocab_size, 1))
         
-        for param in [self.U, self.V, self.W]:
-            param = init_orthogonal(param)
+        self.U = init_orthogonal(self.U)
+        self.V = init_orthogonal(self.V)
+        self.W = init_orthogonal(self.W)
     
     def forward(self, inputs, hidden_state):
         outputs, hidden_states = {}, {}

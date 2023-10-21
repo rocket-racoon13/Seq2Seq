@@ -38,7 +38,6 @@ def load_model_ckpt(model, ckpt_dir, model_name):
 def init_orthogonal(param):
     """
     Initializes weight parameters orthogonally.
-    
     Refer to this paper for an explanation of this initialization:
     https://arxiv.org/abs/1312.6120
     """
