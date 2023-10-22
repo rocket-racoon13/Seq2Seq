@@ -154,6 +154,10 @@ class LSTM:
                         np.dot(self.W_ho.T, d_o)
             d_c_prev = d_c * f_dict[t]
             
+            # update d_h_next, d_c_next for the next iteration
+            d_h_next = d_h_prev
+            d_c_next = d_c_prev
+            
         gradients = (
             d_W_hf, d_W_hg, d_W_hi, d_W_ho, 
             d_W_xf, d_W_xg, d_W_xi, d_W_xo, d_W_y,
