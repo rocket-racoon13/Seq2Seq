@@ -28,32 +28,6 @@ class RNN:
             outputs[t] = out
         return outputs, hidden_states
     
-    def clip_gradient_norm(self, grads, max_norm=0.25):
-        """
-        Clips gradients to have a maximum norm of `max_norm`.
-        This is to prevent the exploding gradients problem.
-        """ 
-        # Set the maximum of the norm to be of type float
-        max_norm = float(max_norm)
-        total_norm = 0
-        
-        # Calculate the L2 norm squared for each gradient and add them to the total norm
-        for grad in grads:
-            grad_norm = np.sum(np.power(grad, 2))
-            total_norm += grad_norm
-        
-        total_norm = np.sqrt(total_norm)
-        
-        # Calculate clipping coeficient
-        clip_coef = max_norm / (total_norm + 1e-6)
-        
-        # If the total norm is larger than the maximum allowable norm, then clip the gradient
-        if clip_coef < 1:
-            for grad in grads:
-                grad *= clip_coef
-        
-        return grads
-    
     def backward(self, inputs, outputs, hidden_states, targets):
         d_U = np.zeros_like(self.U)
         d_V = np.zeros_like(self.V)
@@ -96,7 +70,7 @@ class RNN:
             d_h_next = np.dot(self.V.T, d_h_raw)
             
         gradients = d_U, d_V, d_W, d_b_hidden, d_b_out
-        gradients = self.clip_gradient_norm(gradients)
+        gradients = clip_gradient_norm(gradients)
         return loss, gradients
             
     def optimize(self, gradients):
