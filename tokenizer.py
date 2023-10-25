@@ -9,9 +9,9 @@ import numpy as np
 class Tokenizer:
     def __init__(
         self,
-        corpus_file_path="data/simple.txt",
+        corpus_file_path="data/korean_sentences.txt",
         top_k=1000,
-        mode="character"   # "character", "whitespace"
+        mode="whitespace"   # "character", "whitespace"
     ):
         self.top_k = top_k
         self.mode = mode
@@ -21,7 +21,7 @@ class Tokenizer:
         else:
             with open(f"{corpus_file_path}", encoding="utf-8-sig") as f_in:
                 self.corpus = f_in.read()
-        self.token_to_idx, self.idx_to_token = self.create_mapping_dict()
+        self.token_to_idx, self.idx_to_token = self.fit_on_texts()
         self.vocab_size = len(self.token_to_idx)
     
     def tokenize(self, text):
@@ -32,11 +32,12 @@ class Tokenizer:
             all_tokens = text.split()
         return all_tokens
     
-    def create_mapping_dict(self):
+    def fit_on_texts(self):
         token_to_idx, idx_to_token = {}, {}
         token_counter = Counter(self.tokenize(self.corpus))
+        special_tokens = ["PAD", "UNK", "EOS"]
         unique_tokens = list(token_counter.keys())[:self.top_k]
-        unique_tokens = ["EOS", "UNK"] + unique_tokens
+        unique_tokens = special_tokens + unique_tokens
         for idx, token in enumerate(unique_tokens):
             token_to_idx[token] = idx
             idx_to_token[idx] = token
