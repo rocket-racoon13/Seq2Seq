@@ -1,9 +1,12 @@
 from tqdm import tqdm
 
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from data_utils import *
+from dataset import custom_collator
 
 
 class Trainer:
@@ -12,24 +15,35 @@ class Trainer:
         args,
         train_ds,
         valid_ds,
-        model
+        model,
+        optimizer,
+        scheduler,
+        device
     ):
         self.args = args
-        self.hidden_size = args.hidden_size
-        self.batch_size = args.batch_size
-        self.num_epochs = args.num_epochs
         self.train_ds = train_ds
         self.valid_ds = valid_ds
+        
+        self.device = device
         self.model = model
-        self.training_loss = []
-        self.validation_loss = []
+        self.loss_func = nn.CrossEntropyLoss()
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        
         self.steps = 0
         
     def train(self):
+        self.model.train()
+        
         for epoch_i in tqdm(range(self.num_epochs)):
-            # train_loader = DataLoader(self.train_ds, self.batch_size, shuffle=True)
-            epoch_training_loss = 0
+            train_loader = DataLoader(
+                self.train_ds,
+                self.args.batch_size,
+                shuffle=True,
+                collate_fn=custom_collator
+            )
             
+            epoch_training_loss = 0
             for step, (inputs, targets) in enumerate(self.train_ds, 1):
                 # initialize hidden_state[t-1]
                 hidden_state = np.zeros((self.hidden_size, 1))
