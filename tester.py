@@ -40,6 +40,6 @@ class Tester:
                 
                 y_pred = self.model(input)
                 loss = self.loss_func(y_pred, target)
-                self.test_loss += loss
+                self.test_loss += loss.detach().cpu().item()
             
         print(f"=== Test Average Loss: {self.loss / len(test_loader):.4f}")

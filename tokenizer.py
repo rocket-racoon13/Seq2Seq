@@ -9,17 +9,19 @@ import numpy as np
 class Tokenizer:
     def __init__(
         self,
-        corpus_file_path="data/korean_sentences.txt",
-        top_k=1000,
+        args,
+        top_k=5000,
         mode="whitespace"   # "character", "whitespace"
     ):
+        self.corpus_file_path = args.data_dir
         self.top_k = top_k
         self.mode = mode
+        
         # Load corpus file
-        if not os.path.exists(corpus_file_path):
+        if not os.path.exists(self.corpus_file_path):
             raise IOError("=== Corpus file not found. ===")
         else:
-            with open(f"{corpus_file_path}", encoding="utf-8-sig") as f_in:
+            with open(f"{self.corpus_file_path}", encoding="utf-8-sig") as f_in:
                 self.corpus = f_in.read()
         self.token_to_idx, self.idx_to_token = self.fit_on_texts()
         self.vocab_size = len(self.token_to_idx)

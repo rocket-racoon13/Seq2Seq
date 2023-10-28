@@ -36,8 +36,8 @@ class Seq2Seq(nn.Module):
     
     def init_hidden(self, batch_size):
         """
-        Initialize hidden_state (or cell_state) for the beginning sequence.
-        Implemented in nn.LSTM, so the current code is not used.
+        Initialize hidden_state (or cell_state) for the backward pass of the beginning sequence.
+        Implemented in nn.LSTM, so the current code is not used in the trainer.
         """
         return nn.init.kaiming_uniform_(torch.empty(
             self.num_layers*self.directions,

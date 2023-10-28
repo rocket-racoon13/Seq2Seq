@@ -19,14 +19,15 @@ def config():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=777)
     
-    parser.add_argument("--data_dir", type=str, default="data/korean_sentences.txt")
+    parser.add_argument("--data_dir", type=str, default="data/opendict-korean-proverb.txt")
+    parser.add_argument("--inference_data_dir", type=str, default="data/inference.txt")
     parser.add_argument("--save_dir", type=str, default=f"outputs/{datetime.now().strftime('%Y%m%d_%H-%M')}")
     parser.add_argument("--model_name", type=str)
     
-    parser.add_argument("--num_epochs", type=int, default=1000)
-    parser.add_argument("--batch_size", type=int, default=4)
-    parser.add_argument("--hidden_size", type=int, default=128)
-    parser.add_argument("--embedding_size", type=int, default=128)
+    parser.add_argument("--num_epochs", type=int, default=10)
+    parser.add_argument("--batch_size", type=int, default=512)
+    parser.add_argument("--hidden_size", type=int, default=256)
+    parser.add_argument("--embedding_size", type=int, default=256)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--bidirectional", type=bool, default=False)
     parser.add_argument("--nonlinearity", type=str, default="tanh")
@@ -38,8 +39,8 @@ def config():
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--scheduler", type=str, default="lambdaLR")
     
-    parser.add_argument("--logging_steps", type=int, default=50)
-    parser.add_argument("--saving_steps", type=int, default=50)
+    parser.add_argument("--logging_steps", type=int, default=100)
+    parser.add_argument("--saving_steps", type=int, default=100)
     
     parser.add_argument("--train", action="store_true")
     parser.add_argument("--test", action="store_true")
@@ -71,7 +72,7 @@ def main(args):
     
     # Create tokenizer
     tokenizer = Tokenizer(
-        corpus_file_path=args.data_dir,
+        args,
         top_k=1000,
         mode="whitespace"
     )
@@ -87,10 +88,12 @@ def main(args):
             target = tokens[i]
             inputs.append(input)
             targets.append(target)
+    print("Sample data:", inputs[-1], targets[-1])
     
     # Apply encoding to inputs and targets
     inputs = [tokenizer.encode_sequence(seq) for seq in inputs]
     targets = tokenizer.encode_sequence(targets)
+    print("Sample encoding:", inputs[-1], targets[-1])
     
     # Load and split dataset
     X_train, X_test, y_train, y_test = train_test_split(
@@ -147,11 +150,14 @@ def main(args):
     # Generate
     if args.generate:
         generator = Generator(
+            args=args,
             tokenizer=tokenizer,
             model=model,
-            device=device
+            device=device,
         )
-        
+        generator.generate()
+
+
 if __name__ == "__main__":
     args = config()
     main(args)
