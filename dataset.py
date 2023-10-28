@@ -20,7 +20,7 @@ class CustomDataset(Dataset):
     def __getitem__(self, idx):
         # X -> Using LongTensor (indexing) for nn.Embedding
         X = torch.LongTensor(self.inputs[idx])
-        y = torch.FloatTensor(self.targets[idx])
+        y = torch.LongTensor([self.targets[idx]])
         
         return X, y
     
@@ -33,7 +33,8 @@ def custom_collator(batch: List[Tuple[torch.Tensor, torch.Tensor]]):
     inputs = [item[0] for item in batch]
     targets = [item[1] for item in batch]
     inputs = pad_sequences(inputs)   # variable length input padding
-    targets = torch.stack(targets, dim=0)
+    targets = torch.stack(targets, dim=0).squeeze(dim=-1)
+    return inputs, targets
     
     
 def pad_sequences(sequences: List[torch.Tensor], max_len=None, padding="pre"):

@@ -1,10 +1,10 @@
+import os
 from tqdm import tqdm
 
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from dataset import custom_collator
 
@@ -31,11 +31,59 @@ class Trainer:
         self.scheduler = scheduler
         
         self.steps = 0
+        self.train_writer = SummaryWriter(log_dir=os.path.join(args.save_dir, 'log/train'))
+        self.valid_writer = SummaryWriter(log_dir=os.path.join(args.save_dir, 'log/valid'))
+        self.best_loss = 100000000000
+    
+    def update_tensorboard(self, loss, mode="train"):
+        if mode == "train":
+            self.train_writer.add_scalar("Loss/train", loss, self.steps)
+        elif mode == "valid":
+            self.valid_writer.add_scalar("Loss/valid", loss, self.steps)
+    
+    def eval(self):
+        validation_loss = 0
+        valid_loader = DataLoader(
+            self.valid_ds,
+            self.args.batch_size,
+            shuffle=False,
+            collate_fn=custom_collator
+        )
         
+        self.model.eval()
+        with torch.no_grad():
+            for batch in valid_loader:
+                batch = [b.to(self.device) for b in batch]
+                input, target = batch
+                
+                y_pred = self.model(input)[:,-1,:]   # Get the last output
+                loss = self.loss_func(y_pred, target)
+                validation_loss += loss.detach().cpu().item()
+        
+        average_loss = validation_loss / len(valid_loader)
+        print(f"=== Validation Loss: {average_loss:4.4f} ===")
+        
+        self.update_tensorboard(
+            loss=average_loss,
+            mode="valid"
+        )
+        
+        # Save best loss
+        if average_loss < self.best_loss:
+            self.best_loss = average_loss
+            
+            # Save best model checkpoint
+            torch.save({
+                "steps": self.steps,
+                "model_state_dict": self.model.state_dict(),
+                "optimizer_state_dict": self.optimizer.state_dict(),
+                "loss": average_loss
+            }, os.path.join(self.args.save_dir, 'best-model.ckpt'))
+    
     def train(self):
         self.model.train()
         
-        for epoch_i in tqdm(range(self.num_epochs)):
+        for epoch in tqdm(range(1, self.args.num_epochs+1)):
             train_loader = DataLoader(
                 self.train_ds,
                 self.args.batch_size,
@@ -43,41 +91,38 @@ class Trainer:
                 collate_fn=custom_collator
             )
             
-            epoch_training_loss = 0
-            for step, (inputs, targets) in enumerate(self.train_ds, 1):
-                # initialize hidden_state[t-1]
-                hidden_state = np.zeros((self.hidden_size, 1))
-                outputs, hidden_states = self.model.forward(
-                    inputs, hidden_state
-                )
-                loss, gradients = self.model.backward(
-                    inputs, outputs, hidden_states, targets
-                )
-                epoch_training_loss += loss
-                self.model.optimize(gradients)
+            for step, batch in enumerate(train_loader, 1):
+                batch = [b.to(self.device) for b in batch]
+                input, target = batch
+                
+                y_pred = self.model(input)[:,-1,:]   # Get the last output
+                loss = self.loss_func(y_pred, target)
+                
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
                 self.steps += 1
                 
-                if step % self.args.logging_steps == 0:
-                    avg_loss = epoch_training_loss / step
-                    print(f"Epoch: {epoch_i:3d} Batch: {step:2d} Loss: {avg_loss:4.4f}")
+                if self.steps % self.args.logging_steps == 0:
+                    print(f"Epoch: {epoch:3d} Batch: {step:2d} Loss: {loss:4.4f}")
+                    
+                    self.update_tensorboard(
+                        loss=loss.detach().cpu().item(),
+                        mode="train"
+                    )
                     
                 if self.steps % self.args.saving_steps == 0:
-                    pass
-            
-            self.training_loss.append(epoch_training_loss / len(self.train_ds))
+                    torch.save({
+                        "epochs": epoch,
+                        "steps": step,
+                        "model_state_dict": self.model.state_dict(),
+                        "optimizer_state_dict": self.optimizer.state_dict()
+                    }, os.path.join(self.args.save_dir, "latest-model.ckpt"))
+                    
+            self.scheduler.step()
             self.eval()
             
-    def eval(self):
-        # valid_loader = DataLoader(self.valid_ds, self.batch_size, shuffle=False)
-        validation_loss = 0
-        for (inputs, targets) in self.valid_ds:
-            hidden_state = np.zeros((self.hidden_size, 1))
-            outputs, hidden_states = self.model.forward(
-                inputs, hidden_state
-            )
-            loss, _ = self.model.backward(
-                inputs, outputs, hidden_states, targets
-            )
-            validation_loss += loss
-            
-        print(f"Validation Loss: {validation_loss/len(self.valid_ds):4.4f}")
+        self.train_writer.flush()
+        self.valid_writer.flush()
+        self.train_writer.close()
+        self.valid_writer.close()
