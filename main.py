@@ -24,11 +24,11 @@ def config():
     parser.add_argument("--save_dir", type=str, default=f"outputs/{datetime.now().strftime('%Y%m%d_%H-%M')}")
     parser.add_argument("--model_name", type=str)
     
-    parser.add_argument("--num_epochs", type=int, default=10)
+    parser.add_argument("--num_epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=512)
     parser.add_argument("--hidden_size", type=int, default=256)
     parser.add_argument("--embedding_size", type=int, default=256)
-    parser.add_argument("--num_layers", type=int, default=1)
+    parser.add_argument("--num_layers", type=int, default=2)
     parser.add_argument("--bidirectional", type=bool, default=False)
     parser.add_argument("--nonlinearity", type=str, default="tanh")
     parser.add_argument("--bias", type=bool, default=True)
